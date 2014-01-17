@@ -1,0 +1,199 @@
+/*
+ * This is where you can make custom styles for the visual
+ * aspects of your slideshow.
+ *
+ * You shouldn't do too much custom sizing here, as it may
+ * mess up the automatic sizing algorithm.
+ */
+@font-face {
+  font-family: "Avenir LT W01 45 Book";
+  src: url("../fonts/721226/4f32268ffd864960b72c4bb1ba75ec6f.eot");
+  src: url("../fonts/721226/4f32268ffd864960b72c4bb1ba75ec6f.eot") format("eot"), url("../fonts/721226/939cba035b404d019bc57589eca863db.woff") format("woff"), url("../fonts/721226/849bc5b9a2ff4343977b26ba8bd24a60.ttf") format("truetype"), url("../fonts/721226/f67fa3b5c1d1488f8e60a828b9ad56a4.svg#f67fa3b5-c1d1-488f-8e60-a828b9ad56a4") format("svg"); }
+
+@font-face {
+  font-family: "Avenir LT W01 65 Medium";
+  src: url("../fonts/721238/212ab03d5db24d6ab94c171cc702aa51.eot");
+  src: url("../fonts/721238/212ab03d5db24d6ab94c171cc702aa51.eot") format("eot"), url("../fonts/721238/2cac77ec9bc04ee787e427650190744f.woff") format("woff"), url("../fonts/721238/aaf11848aac24d099a9caac5ff7b8ff4.ttf") format("truetype"), url("../fonts/721238/294099f38d004676afc55e9d8d43ad69.svg#294099f3-8d00-4676-afc5-5e9d8d43ad69") format("svg"); }
+
+@font-face {
+  font-family: "Avenir LT W01 85 Heavy";
+  src: url("../fonts/721244/f61bf0f6c1934100b94012a1a01dcee5.eot");
+  src: url("../fonts/721244/f61bf0f6c1934100b94012a1a01dcee5.eot") format("eot"), url("../fonts/721244/7147ec3a8ff84ec98c5cbd1571dc6ae6.woff") format("woff"), url("../fonts/721244/d1dc54b2878d46938d6eb442e99fef68.ttf") format("truetype"), url("../fonts/721244/731dd4d364da427dba6101575b3cf3f7.svg#731dd4d3-64da-427d-ba61-01575b3cf3f7") format("svg"); }
+
+@font-face {
+  font-family: "Serifa W01 45 Light";
+  src: url("../fonts/788315/8a261be067b04281b1bf59158330a8e8.eot");
+  src: url("../fonts/788315/8a261be067b04281b1bf59158330a8e8.eot") format("eot"), url("../fonts/788315/58356123ed4a48119750616ce4e42a42.woff") format("woff"), url("../fonts/788315/6874f5062772443ab9d2d1f8d75d57eb.ttf") format("truetype"), url("../fonts/788315/33213fecd300419f8bfea6047634742b.svg#33213fec-d300-419f-8bfe-a6047634742b") format("svg"); }
+
+@font-face {
+  font-family: "Serifa W01 55 Roman";
+  src: url("../fonts/788321/ea7ab949b653455194573a4ccc00d16a.eot");
+  src: url("../fonts/788321/ea7ab949b653455194573a4ccc00d16a.eot") format("eot"), url("../fonts/788321/675fde2f85734f91bea3266fb7ab1888.woff") format("woff"), url("../fonts/788321/ebee6742993a4386b7c3d51f3ab65784.ttf") format("truetype"), url("../fonts/788321/b70296e797104609960796bdb82c138a.svg#b70296e7-9710-4609-9607-96bdb82c138a") format("svg"); }
+
+h1 {
+  font-family: "Serifa W01 55 Roman", "Century Schoolbook", serif; }
+
+h2, h3, h4 {
+  font-family: "Serifa W01 45 Light", "Century Schoolbook", serif; }
+
+.sans {
+  font-family: "Avenir LT W01 45 Book", "Century Gothic", Helvetica, Arial, sans-serif; }
+
+.mono {
+  font-family: "Source Code Pro", Consolas, Courier, monospace; }
+
+.small {
+  font-size: 50%;
+  font-style: italic; }
+
+p, blockquote, li, section.QUOTE h1, section.QUOTE2 h1 {
+  font-family: "Avenir LT W01 45 Book", "Century Gothic", Helvetica, Arial, sans-serif; }
+
+pre, code {
+  font-family: "Source Code Pro", Consolas, Courier, monospace; }
+
+code {
+  background: #000;
+  color: #efeff0;
+  border-radius: 0.25em;
+  padding: 0.15em; }
+
+h1 pre {
+  font-weight: normal; }
+
+h1 pre strong {
+  font-weight: bold; }
+
+section.TITLE, section.SECTION, section.IMAGE, section.NORMAL, section.FREEFORM {
+  text-align: center; }
+
+html {
+  height: 100%; }
+
+body {
+  color: #474749;
+  background-color: #b0d7d1;
+  background: -webkit-linear-gradient(top, #b0d7d1, #509e92);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  height: 100%;
+  margin: 0; }
+
+body.TITLE, body.SECTION {
+  background-color: #eee249;
+  background: -webkit-linear-gradient(top, #eee249, #f5ed8f); }
+
+body.COMMANDLINE {
+  background: black; }
+
+body.CODE {
+  background-color: #474749;
+  background: -webkit-linear-gradient(top, #474749, #212122); }
+
+body.IMAGE {
+  background: white; }
+
+section.BULLETS, section.FREEFORM {
+  margin-left: 64px; }
+
+section.BULLETS h1, section.FREEFORM h1 {
+  text-align: center; }
+
+section.COMMANDLINE code {
+  background: black;
+  color: #00ff00; }
+
+section.QUOTE, section.QUOTE2 {
+  margin: 2em;
+  font-style: italic; }
+  section.QUOTE strong, section.QUOTE2 strong {
+    font-weight: bold;
+    font-style: normal;
+    font-size: 150%; }
+
+section.QUOTE {
+  text-align: left; }
+
+section.QUOTE2 {
+  text-align: right; }
+
+section.COMMANDLINE .cli-prompt {
+  font-weight: bold;
+  color: white; }
+
+section.COMMANDLINE .cli-command {
+  color: #00ffff; }
+
+h1, h2, h3, h4 {
+  margin: 0; }
+
+h2 {
+  font-size: 90%; }
+
+h3 {
+  font-size: 80%; }
+
+h4 {
+  font-size: 70%; }
+
+li {
+  list-style: disc;
+  list-style-position: outside;
+  margin-left: 1em;
+  margin-right: 1em;
+  line-height: 2em; }
+
+.images {
+  margin-top: 1em; }
+
+table {
+  margin: 0 auto; }
+  table td.image {
+    text-align: right; }
+  table tr td.url {
+    text-align: left;
+    font-size: 40%; }
+
+#timer {
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  padding: 0.2em;
+  border-radius: 0.2em;
+  background: black; }
+
+#timer .seconds {
+  font-size: 25%; }
+
+#timer .hours {
+  display: none;
+  /* remove this to show the hours field */ }
+
+#timer a {
+  text-decoration: none; }
+
+#timer #clock, #timer #controls {
+  display: inline; }
+
+#timer #pause {
+  letter-spacing: -0.2em; }
+
+#timer #controls {
+  display: none; }
+
+#timer.time-ok {
+  color: #b0d7d1;
+  font-size: 133%; }
+
+#timer.time-over {
+  background: white;
+  color: red;
+  font-size: 200%; }
+
+#timer.time-warn {
+  color: #eee249;
+  font-size: 150%; }
+
+#timer.time-alert {
+  color: red;
+  font-size: 175%; }

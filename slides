@@ -1,0 +1,322 @@
+Resque in Production
+!TITLE
+Resque in Production
+Background Everything
+@davetron5000
+
+!NORMAL
+STITCH FIX
+Lead Engineer
+
+!IMAGE: background=252525
+images/LSLogo.jpg
+
+!QUOTE
+Resque is a Redis-backed Ruby library for creating background jobs, placing them on multiple queues, and processing them later.
+
+!CODE
+file://src/users_controller_orig.rb
+
+!CODE: callout=5
+file://src/users_controller_orig.rb
+
+!BULLETS
+Set Up Resque
+* Write the code
+* Configure it
+* Set up worker processes
+
+!CODE
+file://src/users_controller_resque.rb
+
+!CODE
+file://src/user_welcome_mailer_job.rb
+
+!CODE: callout=2
+file://src/user_welcome_mailer_job.rb
+
+!CODE: callout=3
+file://src/user_welcome_mailer_job.rb
+
+!CODE: language=ruby
+# config/initializers/resque.rb
+configuration = {
+  host: ENV['RESQUE_REDIS_HOST'],
+  port: ENV['RESQUE_REDIS_PORT'],
+}
+Resque.redis = Redis.new(configuration)
+
+
+!COMMANDLINE
+> echo "require 'resque/tasks'" > lib/tasks/resque.rake
+-> Rake task created
+> rake environment resque:work QUEUE=*
+-> Worker is now running
+
+!SECTION
+New Problem
+(the same one, actually)
+
+!CODE
+file://src/purchases_controller_orig.rb
+
+!CODE: callout=10
+file://src/purchases_controller_orig.rb
+
+!CODE: callout=10
+file://src/purchases_controller_resque.rb
+
+!CODE
+file://src/purchase_mailer_job.rb
+
+!CODE
+file://src/user_welcome_mailer_job.rb
+
+!CODE: language=ruby
+class XXXMailerJob
+  @queue = :mail
+  def self.perform(some_stuff_id)
+    some_stuff = SomeStuff.find(id)
+    XXXMailer.send_email(some_stuff)
+  end
+end
+
+!COMMANDLINE
+> echo "gem 'resque_mailer'" >> Gemfile
+> bundle install
+-> gem installed
+
+!CODE: language=ruby
+class PurchaseMailer < ActionMailer::Base
+
+
+  def self.confirm_purchase(purchase)
+
+    # ...    
+  end
+end
+
+class UserMailer < ActionMailer::Base
+  
+
+  def self.welcome(user)
+
+    # ...    
+  end
+end
+
+!CODE: language=ruby callout=2,11
+class PurchaseMailer < ActionMailer::Base
+  include Resque::Mailer
+
+  def self.confirm_purchase(purchase_id)
+    purchase = Purchase.find(purchase_id)
+    # ...    
+  end
+end
+
+class UserMailer < ActionMailer::Base
+  include Resque::Mailer
+
+  def self.welcome(user_id)
+    user = User.find(user_id)
+    # ...    
+  end
+end
+
+!CODE: language=ruby callout=5,14
+class PurchaseMailer < ActionMailer::Base
+  include Resque::Mailer
+
+  def self.confirm_purchase(purchase_id)
+    purchase = Purchase.find(purchase_id)
+    # ...    
+  end
+end
+
+class UserMailer < ActionMailer::Base
+  include Resque::Mailer
+
+  def self.welcome(user_id)
+    user = User.find(user_id)
+    # ...    
+  end
+end
+
+!CODE: language=ruby
+class UsersController
+  def create
+    user = User.new(params[:user])
+    if user.save
+      UserMailer.welcome(user.id).deliver
+    else
+      render 'new'
+    end
+  end
+end
+
+!CODE
+file://src/purchases_controller_orig.rb
+
+!SECTION
+Purchase emails still failing
+
+!CODE: language=ruby
+
+  mount Resque::Server, at: 'resque'
+
+
+!CODE: language=ruby
+constraints CanAccessResque do
+  mount Resque::Server, at: 'resque'
+end
+
+!CODE: language=ruby
+class CanAccessResque
+  def self.matches?(request)
+    # whatever
+  end
+end
+
+!IMAGE: background=EFEFEF
+images/resque-web-1.png
+
+!IMAGE: background=EFEFEF
+images/resque-web-failed-queue.png
+
+!COMMANDLINE
+> echo "gem 'resque-retry'" >> Gemfile
+> bundle install
+-> gem installed
+
+!CODE
+file://src/resque_retry_config.rb
+
+!CODE: callout=2,3
+file://src/resque_retry_config.rb
+
+!CODE: callout=13,14,15
+file://src/resque_retry_config.rb
+
+!CODE: language=ruby callout=4
+# Cribbed from https://blog.engineyard.com/2011/the-resque-way
+class AsyncApplicationMailer < ActionMailer::Base
+  include Resque::Mailer
+  extend Resque::Plugins::Retry
+end
+
+!CODE: language=ruby callout=1
+class UserMailer < AsyncApplicationMailer
+
+  # ...
+
+end
+
+!COMMANDLINE
+> rake environment resque:scheduler
+-> retries can now be scheduled and processed
+
+!CODE: callout=4,5
+file://src/resque_retry_config.rb
+
+!IMAGE: background=EFEFEF
+images/resque-web-retry.png
+
+!IMAGE: background=EFEFEF
+images/resque-web-retry-queue.png
+
+!CODE: callout=4
+file://src/monitor_task.rb
+
+!CODE: callout=7
+file://src/monitor_task.rb
+
+!CODE: callout=6
+file://src/charge_purchase_job.rb
+
+!CODE: callout=6
+file://src/charge_purchase_job_only.rb
+
+!CODE: callout=5
+file://src/pack_in_materials_job_orig.rb
+
+!CODE: callout=2,4,5
+file://src/pack_in_materials_job_retry.rb
+
+!CODE: callout=6
+file://src/charge_purchase_job_idempotent.rb
+
+!SECTION
+Jobs not being processed, but not failing
+
+!CODE: language=ruby
+class AdminIndexJob
+  @queue = :admin
+  def self.perform(customer_id)
+    # a whole lot of slow code
+    # that builds a cached copy of
+    # the customer and all his 
+    # or her data
+  end
+end
+
+!COMMANDLINE
+> rake environment resque:work QUEUE=mail,purchasing,admin
+-> now purchasing takes a back seat
+> rake environment resque:work QUEUE=mail,purchasing,admin
+> rake environment resque:work QUEUE=purchasing,mail,admin
+-> now things are getting confusing
+
+!COMMANDLINE
+> rake environment resque:work QUEUE=mail
+> rake environment resque:work QUEUE=purchasing
+> rake environment resque:work QUEUE=admin
+-> simple, assuming you can spare the CPU and memory
+
+!BULLETS
+You Might Are Gonna Need It
+* All external contact would be run in a job
+* All email sent in a job
+* All jobs configured to retry
+* All jobs idempotent
+* Jobs are fine-grained
+* Each queue has its own worker
+* Each app has its own Redis
+* Everything monitored
+
+!IMAGE: background=EFEFEF
+images/dccar.jpg
+
+!IMAGE: background=EFEFEF
+images/cover.jpg
+
+!FREEFORM
+<h1>THANKS!</1>
+<table><tbody>
+  <tr>
+    <td style="text-align: right" colspan='2'><h3>Slides</h3></td>
+    <td style="white-space: nowrap"><h3>@</h3></td>
+    <td style="white-space: nowrap; text-align: left"><h3><a href="http://bit.ly/weird-ruby">bit.ly/weird-ruby</a></h3></td>
+  </tr>
+  <tr>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top" colspan='2'><h3>Jobs</h3></td>
+    <td style="white-space: nowrap; vertical-align: top"><h3>@</h3></td>
+    <td style="text-align:left; vertical-align: top"><h3> <a href="http://tech.stitchfix.com">tech.stitchfix.com</a></h3></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top"><img class="shadow" src="images/cover.jpg" width='100'></td>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top"><h3>Buy <em>The Senior Software Engineer</em>&nbsp;</h3></td>
+    <td style="white-space: nowrap; vertical-align: top"><h3>@</h3></td>
+    <td style="text-align:left; vertical-align: top"><h3><a href="http://sweng.me">sweng.me</a></h3></td>
+  </tr>
+  <tr>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top"><img class="shadow" src="images/dccar.jpg" width='100'></td>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top"><h3>Buy <em>Build Awesome Command-Line<br>Apps in Ruby</em>&nbsp;</h3></td>
+    <td style="white-space: nowrap; vertical-align: top"><h3>@</h3></td>
+    <td style="text-align:left; vertical-align: top"><h3><a href="http://pragprog.com/book/dccar2">pragprog.com/book/dccar2</a></h3></td>
+  </tr>
+</tbody></table>
+

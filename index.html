@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Resque in Production</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Resque in Production">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="js/lib/jquery-1.8.0.min.js"></script>
+    <script src="js/lib/highlight-7.1.min.js"></script>
+    <script src="js/lib/jquerytypewriter.js"></script>
+    <script src="js/lib/underscore-1.3.3.min.js"></script>
+    <script src="js/lib/jquery.touchSwipe.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/sizer.js"></script>
+    <script src="js/bullets.js"></script>
+    <script src="js/trickster.js"></script>
+    <script src="js/timer.js"></script>
+    <script src="js/custom.js"></script>
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <script>
+      $(window).load(function() {
+        TricksterTimer = TricksterTimer(TricksterDefaultConfig,{});
+        TricksterTimer.setup();
+
+        Trickster = TricksterLoader(TricksterDefaultConfig,{});
+        Trickster.load(TricksterTimer);
+
+      });
+    </script>
+  </head>
+  <body><div id="contents">
+    <section class='TITLE'>
+<h1>Resque in Production</h1>
+<h2>Background Everything</h2>
+<h3>@davetron5000</h3>
+</section>
+<section class='NORMAL'>
+<h1>STITCH FIX</h1>
+<h2>Lead Engineer</h2>
+</section>
+<section class='IMAGE' data-background='252525'>
+<img src='images/LSLogo.jpg'>
+</section>
+<section class='QUOTE'>
+<h1>Resque is a Redis-backed Ruby library for creating background jobs, placing them on multiple queues, and processing them later.</h1>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class UsersController</span>
+<span class='line line-2 ' >  def create</span>
+<span class='line line-3 ' >    user = User.new(params[:user])</span>
+<span class='line line-4 ' >    if user.save</span>
+<span class='line line-5 ' >      UserMailer.welcome(user).deliver</span>
+<span class='line line-6 ' >    else</span>
+<span class='line line-7 ' >      render 'new'</span>
+<span class='line line-8 ' >    end</span>
+<span class='line line-9 ' >  end</span>
+<span class='line line-10 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='5'><span class='line line-1 ' >class UsersController</span>
+<span class='line line-2 ' >  def create</span>
+<span class='line line-3 ' >    user = User.new(params[:user])</span>
+<span class='line line-4 ' >    if user.save</span>
+<div class='lines-callout'><span class='line line-5 line-callout' >      UserMailer.welcome(user).deliver</span>
+</div><span class='line line-6 ' >    else</span>
+<span class='line line-7 ' >      render 'new'</span>
+<span class='line line-8 ' >    end</span>
+<span class='line line-9 ' >  end</span>
+<span class='line line-10 ' >end</span></code></pre>
+</section>
+<section class='BULLETS'>
+<h1>Set Up Resque</h1>
+<ul>
+<li>Write the code</li>
+<li>Configure it</li>
+<li>Set up worker processes</li>
+</ul>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class UsersController</span>
+<span class='line line-2 ' >  def create</span>
+<span class='line line-3 ' >    user = User.new(params[:user])</span>
+<span class='line line-4 ' >    if user.save</span>
+<span class='line line-5 ' >      Resque.enqueue(UserWelcomeMailerJob,user.id)</span>
+<span class='line line-6 ' >    else</span>
+<span class='line line-7 ' >      render 'new'</span>
+<span class='line line-8 ' >    end</span>
+<span class='line line-9 ' >  end</span>
+<span class='line line-10 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class UserWelcomeMailerJob</span>
+<span class='line line-2 ' >  @queue = :mail</span>
+<span class='line line-3 ' >  def self.perform(user_id)</span>
+<span class='line line-4 ' >    user = User.find(user_id)</span>
+<span class='line line-5 ' >    UserMailer.welcome(user).deliver</span>
+<span class='line line-6 ' >  end</span>
+<span class='line line-7 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='2'><span class='line line-1 ' >class UserWelcomeMailerJob</span>
+<div class='lines-callout'><span class='line line-2 line-callout' >  @queue = :mail</span>
+</div><span class='line line-3 ' >  def self.perform(user_id)</span>
+<span class='line line-4 ' >    user = User.find(user_id)</span>
+<span class='line line-5 ' >    UserMailer.welcome(user).deliver</span>
+<span class='line line-6 ' >  end</span>
+<span class='line line-7 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='3'><span class='line line-1 ' >class UserWelcomeMailerJob</span>
+<span class='line line-2 ' >  @queue = :mail</span>
+<div class='lines-callout'><span class='line line-3 line-callout' >  def self.perform(user_id)</span>
+</div><span class='line line-4 ' >    user = User.find(user_id)</span>
+<span class='line line-5 ' >    UserMailer.welcome(user).deliver</span>
+<span class='line line-6 ' >  end</span>
+<span class='line line-7 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' ># config/initializers/resque.rb</span>
+<span class='line line-2 ' >configuration = {</span>
+<span class='line line-3 ' >  host: ENV['RESQUE_REDIS_HOST'],</span>
+<span class='line line-4 ' >  port: ENV['RESQUE_REDIS_PORT'],</span>
+<span class='line line-5 ' >}</span>
+<span class='line line-6 ' >Resque.redis = Redis.new(configuration)</span>
+<span class='line line-7 ' ></span></code></pre>
+</section>
+<section class='COMMANDLINE'>
+<pre><code class='no-highlight'><span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> echo "require 'resque/tasks'" > lib/tasks/resque.rake</span>
+<span class='cli-element cli-result'><span class='cli-line'>-> Rake task created</span></span>
+<span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> rake environment resque:work QUEUE=*</span>
+<span class='cli-element cli-result'><span class='cli-line'>-> Worker is now running</span></span>
+</code></pre>
+</section>
+<section class='SECTION'>
+<h1>New Problem</h1>
+<h2>(the same one, actually)</h2>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class PurchasesController</span>
+<span class='line line-2 ' >  def create</span>
+<span class='line line-3 ' >    customer = current_customer</span>
+<span class='line line-4 ' >    purchase = Purchase.new(params[:purchase].merge(customer: customer))</span>
+<span class='line line-5 ' >    if purchase.valid?</span>
+<span class='line line-6 ' >      Purchase.transaction do</span>
+<span class='line line-7 ' >        customer.last_order_date = Time.now</span>
+<span class='line line-8 ' >        purchase.save!</span>
+<span class='line line-9 ' >        customer.save!</span>
+<span class='line line-10 ' >        PurchaseMailer.confirm_purchase(purchase).deliver</span>
+<span class='line line-11 ' >      end</span>
+<span class='line line-12 ' >    else</span>
+<span class='line line-13 ' >      render 'new'</span>
+<span class='line line-14 ' >    end</span>
+<span class='line line-15 ' >  end</span>
+<span class='line line-16 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='10'><span class='line line-1 ' >class PurchasesController</span>
+<span class='line line-2 ' >  def create</span>
+<span class='line line-3 ' >    customer = current_customer</span>
+<span class='line line-4 ' >    purchase = Purchase.new(params[:purchase].merge(customer: customer))</span>
+<span class='line line-5 ' >    if purchase.valid?</span>
+<span class='line line-6 ' >      Purchase.transaction do</span>
+<span class='line line-7 ' >        customer.last_order_date = Time.now</span>
+<span class='line line-8 ' >        purchase.save!</span>
+<span class='line line-9 ' >        customer.save!</span>
+<div class='lines-callout'><span class='line line-10 line-callout' >        PurchaseMailer.confirm_purchase(purchase).deliver</span>
+</div><span class='line line-11 ' >      end</span>
+<span class='line line-12 ' >    else</span>
+<span class='line line-13 ' >      render 'new'</span>
+<span class='line line-14 ' >    end</span>
+<span class='line line-15 ' >  end</span>
+<span class='line line-16 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='10'><span class='line line-1 ' >class PurchasesController</span>
+<span class='line line-2 ' >  def create</span>
+<span class='line line-3 ' >    customer = current_customer</span>
+<span class='line line-4 ' >    purchase = Purchase.new(params[:purchase].merge(customer: customer))</span>
+<span class='line line-5 ' >    if purchase.valid?</span>
+<span class='line line-6 ' >      Purchase.transaction do</span>
+<span class='line line-7 ' >        customer.last_order_date = Time.now</span>
+<span class='line line-8 ' >        purchase.save!</span>
+<span class='line line-9 ' >        customer.save!</span>
+<div class='lines-callout'><span class='line line-10 line-callout' >        Resque.enqueue(ConfirmPurhaseMailerJob,purchase.id)</span>
+</div><span class='line line-11 ' >      end</span>
+<span class='line line-12 ' >    else</span>
+<span class='line line-13 ' >      render 'new'</span>
+<span class='line line-14 ' >    end</span>
+<span class='line line-15 ' >  end</span>
+<span class='line line-16 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class ConfirmPurhaseMailerJob</span>
+<span class='line line-2 ' >  @queue = :mail</span>
+<span class='line line-3 ' >  def self.perform(purchase_id)</span>
+<span class='line line-4 ' >    purchase = Purchase.find(purchase_id)</span>
+<span class='line line-5 ' >    PurchaseMailer.confirm_purchase(purchase).deliver</span>
+<span class='line line-6 ' >  end</span>
+<span class='line line-7 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class UserWelcomeMailerJob</span>
+<span class='line line-2 ' >  @queue = :mail</span>
+<span class='line line-3 ' >  def self.perform(user_id)</span>
+<span class='line line-4 ' >    user = User.find(user_id)</span>
+<span class='line line-5 ' >    UserMailer.welcome(user).deliver</span>
+<span class='line line-6 ' >  end</span>
+<span class='line line-7 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class XXXMailerJob</span>
+<span class='line line-2 ' >  @queue = :mail</span>
+<span class='line line-3 ' >  def self.perform(some_stuff_id)</span>
+<span class='line line-4 ' >    some_stuff = SomeStuff.find(id)</span>
+<span class='line line-5 ' >    XXXMailer.send_email(some_stuff)</span>
+<span class='line line-6 ' >  end</span>
+<span class='line line-7 ' >end</span></code></pre>
+</section>
+<section class='COMMANDLINE'>
+<pre><code class='no-highlight'><span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> echo "gem 'resque_mailer'" >> Gemfile</span>
+<span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> bundle install</span>
+<span class='cli-element cli-result'><span class='cli-line'>-> gem installed</span></span>
+</code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class PurchaseMailer < ActionMailer::Base</span>
+<span class='line line-2 ' ></span>
+<span class='line line-3 ' ></span>
+<span class='line line-4 ' >  def self.confirm_purchase(purchase)</span>
+<span class='line line-5 ' ></span>
+<span class='line line-6 ' >    # ...    </span>
+<span class='line line-7 ' >  end</span>
+<span class='line line-8 ' >end</span>
+<span class='line line-9 ' ></span>
+<span class='line line-10 ' >class UserMailer < ActionMailer::Base</span>
+<span class='line line-11 ' >  </span>
+<span class='line line-12 ' ></span>
+<span class='line line-13 ' >  def self.welcome(user)</span>
+<span class='line line-14 ' ></span>
+<span class='line line-15 ' >    # ...    </span>
+<span class='line line-16 ' >  end</span>
+<span class='line line-17 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines='2,11'><span class='line line-1 ' >class PurchaseMailer < ActionMailer::Base</span>
+<div class='lines-callout'><span class='line line-2 line-callout' >  include Resque::Mailer</span>
+</div><span class='line line-3 ' ></span>
+<span class='line line-4 ' >  def self.confirm_purchase(purchase_id)</span>
+<span class='line line-5 ' >    purchase = Purchase.find(purchase_id)</span>
+<span class='line line-6 ' >    # ...    </span>
+<span class='line line-7 ' >  end</span>
+<span class='line line-8 ' >end</span>
+<span class='line line-9 ' ></span>
+<span class='line line-10 ' >class UserMailer < ActionMailer::Base</span>
+<div class='lines-callout'><span class='line line-11 line-callout' >  include Resque::Mailer</span>
+</div><span class='line line-12 ' ></span>
+<span class='line line-13 ' >  def self.welcome(user_id)</span>
+<span class='line line-14 ' >    user = User.find(user_id)</span>
+<span class='line line-15 ' >    # ...    </span>
+<span class='line line-16 ' >  end</span>
+<span class='line line-17 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines='5,14'><span class='line line-1 ' >class PurchaseMailer < ActionMailer::Base</span>
+<span class='line line-2 ' >  include Resque::Mailer</span>
+<span class='line line-3 ' ></span>
+<span class='line line-4 ' >  def self.confirm_purchase(purchase_id)</span>
+<div class='lines-callout'><span class='line line-5 line-callout' >    purchase = Purchase.find(purchase_id)</span>
+</div><span class='line line-6 ' >    # ...    </span>
+<span class='line line-7 ' >  end</span>
+<span class='line line-8 ' >end</span>
+<span class='line line-9 ' ></span>
+<span class='line line-10 ' >class UserMailer < ActionMailer::Base</span>
+<span class='line line-11 ' >  include Resque::Mailer</span>
+<span class='line line-12 ' ></span>
+<span class='line line-13 ' >  def self.welcome(user_id)</span>
+<div class='lines-callout'><span class='line line-14 line-callout' >    user = User.find(user_id)</span>
+</div><span class='line line-15 ' >    # ...    </span>
+<span class='line line-16 ' >  end</span>
+<span class='line line-17 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class UsersController</span>
+<span class='line line-2 ' >  def create</span>
+<span class='line line-3 ' >    user = User.new(params[:user])</span>
+<span class='line line-4 ' >    if user.save</span>
+<span class='line line-5 ' >      UserMailer.welcome(user.id).deliver</span>
+<span class='line line-6 ' >    else</span>
+<span class='line line-7 ' >      render 'new'</span>
+<span class='line line-8 ' >    end</span>
+<span class='line line-9 ' >  end</span>
+<span class='line line-10 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class PurchasesController</span>
+<span class='line line-2 ' >  def create</span>
+<span class='line line-3 ' >    customer = current_customer</span>
+<span class='line line-4 ' >    purchase = Purchase.new(params[:purchase].merge(customer: customer))</span>
+<span class='line line-5 ' >    if purchase.valid?</span>
+<span class='line line-6 ' >      Purchase.transaction do</span>
+<span class='line line-7 ' >        customer.last_order_date = Time.now</span>
+<span class='line line-8 ' >        purchase.save!</span>
+<span class='line line-9 ' >        customer.save!</span>
+<span class='line line-10 ' >        PurchaseMailer.confirm_purchase(purchase).deliver</span>
+<span class='line line-11 ' >      end</span>
+<span class='line line-12 ' >    else</span>
+<span class='line line-13 ' >      render 'new'</span>
+<span class='line line-14 ' >    end</span>
+<span class='line line-15 ' >  end</span>
+<span class='line line-16 ' >end</span></code></pre>
+</section>
+<section class='SECTION'>
+<h1>Purchase emails still failing</h1>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' ></span>
+<span class='line line-2 ' >  mount Resque::Server, at: 'resque'</span>
+<span class='line line-3 ' ></span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >constraints CanAccessResque do</span>
+<span class='line line-2 ' >  mount Resque::Server, at: 'resque'</span>
+<span class='line line-3 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class CanAccessResque</span>
+<span class='line line-2 ' >  def self.matches?(request)</span>
+<span class='line line-3 ' >    # whatever</span>
+<span class='line line-4 ' >  end</span>
+<span class='line line-5 ' >end</span></code></pre>
+</section>
+<section class='IMAGE' data-background='EFEFEF'>
+<img src='images/resque-web-1.png'>
+</section>
+<section class='IMAGE' data-background='EFEFEF'>
+<img src='images/resque-web-failed-queue.png'>
+</section>
+<section class='COMMANDLINE'>
+<pre><code class='no-highlight'><span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> echo "gem 'resque-retry'" >> Gemfile</span>
+<span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> bundle install</span>
+<span class='cli-element cli-result'><span class='cli-line'>-> gem installed</span></span>
+</code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' ># config/initializers/resque.rb</span>
+<span class='line line-2 ' >require 'resque_scheduler'</span>
+<span class='line line-3 ' >require 'resque-retry'</span>
+<span class='line line-4 ' >require 'resque_scheduler/server'</span>
+<span class='line line-5 ' >require 'resque-retry/server'</span>
+<span class='line line-6 ' ></span>
+<span class='line line-7 ' >configuration = {</span>
+<span class='line line-8 ' >  host: ENV['RESQUE_REDIS_HOST'],</span>
+<span class='line line-9 ' >  port: ENV['RESQUE_REDIS_PORT'],</span>
+<span class='line line-10 ' >}</span>
+<span class='line line-11 ' >Resque.redis = Redis.new(configuration)</span>
+<span class='line line-12 ' ></span>
+<span class='line line-13 ' >require 'resque/failure/redis'</span>
+<span class='line line-14 ' >Resque::Failure::MultipleWithRetrySuppression.classes = [Resque::Failure::Redis]</span>
+<span class='line line-15 ' >Resque::Failure.backend = Resque::Failure::MultipleWithRetrySuppression</span>
+<span class='line line-16 ' ></span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='2,3'><span class='line line-1 ' ># config/initializers/resque.rb</span>
+<div class='lines-callout'><span class='line line-2 line-callout' >require 'resque_scheduler'</span>
+<span class='line line-3 line-callout' >require 'resque-retry'</span>
+</div><span class='line line-4 ' >require 'resque_scheduler/server'</span>
+<span class='line line-5 ' >require 'resque-retry/server'</span>
+<span class='line line-6 ' ></span>
+<span class='line line-7 ' >configuration = {</span>
+<span class='line line-8 ' >  host: ENV['RESQUE_REDIS_HOST'],</span>
+<span class='line line-9 ' >  port: ENV['RESQUE_REDIS_PORT'],</span>
+<span class='line line-10 ' >}</span>
+<span class='line line-11 ' >Resque.redis = Redis.new(configuration)</span>
+<span class='line line-12 ' ></span>
+<span class='line line-13 ' >require 'resque/failure/redis'</span>
+<span class='line line-14 ' >Resque::Failure::MultipleWithRetrySuppression.classes = [Resque::Failure::Redis]</span>
+<span class='line line-15 ' >Resque::Failure.backend = Resque::Failure::MultipleWithRetrySuppression</span>
+<span class='line line-16 ' ></span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='13,14,15'><span class='line line-1 ' ># config/initializers/resque.rb</span>
+<span class='line line-2 ' >require 'resque_scheduler'</span>
+<span class='line line-3 ' >require 'resque-retry'</span>
+<span class='line line-4 ' >require 'resque_scheduler/server'</span>
+<span class='line line-5 ' >require 'resque-retry/server'</span>
+<span class='line line-6 ' ></span>
+<span class='line line-7 ' >configuration = {</span>
+<span class='line line-8 ' >  host: ENV['RESQUE_REDIS_HOST'],</span>
+<span class='line line-9 ' >  port: ENV['RESQUE_REDIS_PORT'],</span>
+<span class='line line-10 ' >}</span>
+<span class='line line-11 ' >Resque.redis = Redis.new(configuration)</span>
+<span class='line line-12 ' ></span>
+<div class='lines-callout'><span class='line line-13 line-callout' >require 'resque/failure/redis'</span>
+<span class='line line-14 line-callout' >Resque::Failure::MultipleWithRetrySuppression.classes = [Resque::Failure::Redis]</span>
+<span class='line line-15 line-callout' >Resque::Failure.backend = Resque::Failure::MultipleWithRetrySuppression</span>
+</div><span class='line line-16 ' ></span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines='4'><span class='line line-1 ' ># Cribbed from https://blog.engineyard.com/2011/the-resque-way</span>
+<span class='line line-2 ' >class AsyncApplicationMailer < ActionMailer::Base</span>
+<span class='line line-3 ' >  include Resque::Mailer</span>
+<div class='lines-callout'><span class='line line-4 line-callout' >  extend Resque::Plugins::Retry</span>
+</div><span class='line line-5 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines='1'><div class='lines-callout'><span class='line line-1 line-callout' >class UserMailer < AsyncApplicationMailer</span>
+</div><span class='line line-2 ' ></span>
+<span class='line line-3 ' >  # ...</span>
+<span class='line line-4 ' ></span>
+<span class='line line-5 ' >end</span></code></pre>
+</section>
+<section class='COMMANDLINE'>
+<pre><code class='no-highlight'><span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> rake environment resque:scheduler</span>
+<span class='cli-element cli-result'><span class='cli-line'>-> retries can now be scheduled and processed</span></span>
+</code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='4,5'><span class='line line-1 ' ># config/initializers/resque.rb</span>
+<span class='line line-2 ' >require 'resque_scheduler'</span>
+<span class='line line-3 ' >require 'resque-retry'</span>
+<div class='lines-callout'><span class='line line-4 line-callout' >require 'resque_scheduler/server'</span>
+<span class='line line-5 line-callout' >require 'resque-retry/server'</span>
+</div><span class='line line-6 ' ></span>
+<span class='line line-7 ' >configuration = {</span>
+<span class='line line-8 ' >  host: ENV['RESQUE_REDIS_HOST'],</span>
+<span class='line line-9 ' >  port: ENV['RESQUE_REDIS_PORT'],</span>
+<span class='line line-10 ' >}</span>
+<span class='line line-11 ' >Resque.redis = Redis.new(configuration)</span>
+<span class='line line-12 ' ></span>
+<span class='line line-13 ' >require 'resque/failure/redis'</span>
+<span class='line line-14 ' >Resque::Failure::MultipleWithRetrySuppression.classes = [Resque::Failure::Redis]</span>
+<span class='line line-15 ' >Resque::Failure.backend = Resque::Failure::MultipleWithRetrySuppression</span>
+<span class='line line-16 ' ></span></code></pre>
+</section>
+<section class='IMAGE' data-background='EFEFEF'>
+<img src='images/resque-web-retry.png'>
+</section>
+<section class='IMAGE' data-background='EFEFEF'>
+<img src='images/resque-web-retry-queue.png'>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='4'><span class='line line-1 ' >namespace :monitor do</span>
+<span class='line line-2 ' >  namespace :resque do</span>
+<span class='line line-3 ' >    task :failures do</span>
+<div class='lines-callout'><span class='line line-4 line-callout' >      num_failures = Resque::Failure.count</span>
+</div><span class='line line-5 ' >      if num_failures > 0</span>
+<span class='line line-6 ' >        Rails.logger.error("#{num_failures} failures in the resque failed queue!")</span>
+<span class='line line-7 ' >        ResqueMailer.failed_jobs(num_failures).deliver! # <- bang!</span>
+<span class='line line-8 ' >      else</span>
+<span class='line line-9 ' >        Rails.logger.info("All clear!")</span>
+<span class='line line-10 ' >      end</span>
+<span class='line line-11 ' >    end</span>
+<span class='line line-12 ' >  end</span>
+<span class='line line-13 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='7'><span class='line line-1 ' >namespace :monitor do</span>
+<span class='line line-2 ' >  namespace :resque do</span>
+<span class='line line-3 ' >    task :failures do</span>
+<span class='line line-4 ' >      num_failures = Resque::Failure.count</span>
+<span class='line line-5 ' >      if num_failures > 0</span>
+<span class='line line-6 ' >        Rails.logger.error("#{num_failures} failures in the resque failed queue!")</span>
+<div class='lines-callout'><span class='line line-7 line-callout' >        ResqueMailer.failed_jobs(num_failures).deliver! # <- bang!</span>
+</div><span class='line line-8 ' >      else</span>
+<span class='line line-9 ' >        Rails.logger.info("All clear!")</span>
+<span class='line line-10 ' >      end</span>
+<span class='line line-11 ' >    end</span>
+<span class='line line-12 ' >  end</span>
+<span class='line line-13 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='6'><span class='line line-1 ' >class PurchaseChargeJob</span>
+<span class='line line-2 ' >  @queue = :purchasing</span>
+<span class='line line-3 ' >  def self.perform(purchase_id)</span>
+<span class='line line-4 ' >    purchase = Purchase.find(purchase_id)</span>
+<span class='line line-5 ' >    purchase.capture_authorization!</span>
+<div class='lines-callout'><span class='line line-6 line-callout' >    purchase.generate_pack_in_materials!</span>
+</div><span class='line line-7 ' >  end</span>
+<span class='line line-8 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='6'><span class='line line-1 ' >class PurchaseChargeJob</span>
+<span class='line line-2 ' >  @queue = :purchasing</span>
+<span class='line line-3 ' >  def self.perform(purchase_id)</span>
+<span class='line line-4 ' >    purchase = Purchase.find(purchase_id)</span>
+<span class='line line-5 ' >    purchase.capture_authorization!</span>
+<div class='lines-callout'><span class='line line-6 line-callout' >    Resque.enqueue(PackInMaterialsJob,purchase.id)</span>
+</div><span class='line line-7 ' >  end</span>
+<span class='line line-8 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='5'><span class='line line-1 ' >class PackInMaterialsJob </span>
+<span class='line line-2 ' >  @queue = :purchasing</span>
+<span class='line line-3 ' >  def self.perform(purchase_id)</span>
+<span class='line line-4 ' >    purchase = Purchase.find(purchase_id)</span>
+<div class='lines-callout'><span class='line line-5 line-callout' >    purchase.generate_pack_in_materials!</span>
+</div><span class='line line-6 ' >  end</span>
+<span class='line line-7 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='2,4,5'><span class='line line-1 ' >class PackInMaterialsJob </span>
+<div class='lines-callout'><span class='line line-2 line-callout' >  extend Resque::Plugins::Retry</span>
+</div><span class='line line-3 ' >  @queue = :purchasing</span>
+<div class='lines-callout'><span class='line line-4 line-callout' >  @retry_limit = 5</span>
+<span class='line line-5 line-callout' >  @retry_delay = 90 #seconds</span>
+</div><span class='line line-6 ' ></span>
+<span class='line line-7 ' >  def self.perform(purchase_id)</span>
+<span class='line line-8 ' >    purchase = Purchase.find(purchase_id)</span>
+<span class='line line-9 ' >    purchase.generate_pack_in_materials!</span>
+<span class='line line-10 ' >  end</span>
+<span class='line line-11 ' >end</span></code></pre>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines='6'><span class='line line-1 ' >class PurchaseChargeJob</span>
+<span class='line line-2 ' >  @queue = :purchasing</span>
+<span class='line line-3 ' >  def self.perform(purchase_id)</span>
+<span class='line line-4 ' >    purchase = Purchase.find(purchase_id)</span>
+<span class='line line-5 ' >    purchase.capture_authorization! unless purchase.captured?</span>
+<div class='lines-callout'><span class='line line-6 line-callout' >    Resque.enqueue(PackInMaterialsJob,purchase.id)</span>
+</div><span class='line line-7 ' >  end</span>
+<span class='line line-8 ' >end</span></code></pre>
+</section>
+<section class='SECTION'>
+<h1>Jobs not being processed, but not failing</h1>
+</section>
+<section class='CODE'>
+<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class AdminIndexJob</span>
+<span class='line line-2 ' >  @queue = :admin</span>
+<span class='line line-3 ' >  def self.perform(customer_id)</span>
+<span class='line line-4 ' >    # a whole lot of slow code</span>
+<span class='line line-5 ' >    # that builds a cached copy of</span>
+<span class='line line-6 ' >    # the customer and all his </span>
+<span class='line line-7 ' >    # or her data</span>
+<span class='line line-8 ' >  end</span>
+<span class='line line-9 ' >end</span></code></pre>
+</section>
+<section class='COMMANDLINE'>
+<pre><code class='no-highlight'><span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> rake environment resque:work QUEUE=mail,purchasing,admin</span>
+<span class='cli-element cli-result'><span class='cli-line'>-> now purchasing takes a back seat</span></span>
+<span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> rake environment resque:work QUEUE=mail,purchasing,admin</span>
+<span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> rake environment resque:work QUEUE=purchasing,mail,admin</span>
+<span class='cli-element cli-result'><span class='cli-line'>-> now things are getting confusing</span></span>
+</code></pre>
+</section>
+<section class='COMMANDLINE'>
+<pre><code class='no-highlight'><span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> rake environment resque:work QUEUE=mail</span>
+<span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> rake environment resque:work QUEUE=purchasing</span>
+<span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> rake environment resque:work QUEUE=admin</span>
+<span class='cli-element cli-result'><span class='cli-line'>-> simple, assuming you can spare the CPU and memory</span></span>
+</code></pre>
+</section>
+<section class='BULLETS'>
+<h1>You Might Are Gonna Need It</h1>
+<ul>
+<li>All external contact would be run in a job</li>
+<li>All email sent in a job</li>
+<li>All jobs configured to retry</li>
+<li>All jobs idempotent</li>
+<li>Jobs are fine-grained</li>
+<li>Each queue has its own worker</li>
+<li>Each app has its own Redis</li>
+<li>Everything monitored</li>
+</ul>
+</section>
+<section class='IMAGE' data-background='EFEFEF'>
+<img src='images/dccar.jpg'>
+</section>
+<section class='IMAGE' data-background='EFEFEF'>
+<img src='images/cover.jpg'>
+</section>
+<section class='FREEFORM'>
+<h1>THANKS!</1>
+<table><tbody>
+  <tr>
+    <td style="text-align: right" colspan='2'><h3>Slides</h3></td>
+    <td style="white-space: nowrap"><h3>@</h3></td>
+    <td style="white-space: nowrap; text-align: left"><h3><a href="http://bit.ly/weird-ruby">bit.ly/weird-ruby</a></h3></td>
+  </tr>
+  <tr>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top" colspan='2'><h3>Jobs</h3></td>
+    <td style="white-space: nowrap; vertical-align: top"><h3>@</h3></td>
+    <td style="text-align:left; vertical-align: top"><h3> <a href="http://tech.stitchfix.com">tech.stitchfix.com</a></h3></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top"><img class="shadow" src="images/cover.jpg" width='100'></td>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top"><h3>Buy <em>The Senior Software Engineer</em>&nbsp;</h3></td>
+    <td style="white-space: nowrap; vertical-align: top"><h3>@</h3></td>
+    <td style="text-align:left; vertical-align: top"><h3><a href="http://sweng.me">sweng.me</a></h3></td>
+  </tr>
+  <tr>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top"><img class="shadow" src="images/dccar.jpg" width='100'></td>
+    <td style="text-align: right; white-space: nowrap; vertical-align: top"><h3>Buy <em>Build Awesome Command-Line<br>Apps in Ruby</em>&nbsp;</h3></td>
+    <td style="white-space: nowrap; vertical-align: top"><h3>@</h3></td>
+    <td style="text-align:left; vertical-align: top"><h3><a href="http://pragprog.com/book/dccar2">pragprog.com/book/dccar2</a></h3></td>
+  </tr>
+</tbody></table>
+</section>
+
+    </div>
+    <aside id="timer">
+      <div id="clock">
+        <span class="hours">
+          <span id="hour">0</span> :
+        </span>
+        <span class="minutes">
+          <span id="minute">00</span> 
+        </span>
+        <span class="seconds"> : 
+          <span id="second">00</span>
+        </span>
+      </div>
+      <div id="controls">
+        <a id="stop" href="#" onclick="return TricksterTimer.stop();">◼</a>
+        <a id="play" href="#" onclick="return TricksterTimer.play();">▶</a>
+        <a id="pause" href="#" onclick="return TricksterTimer.pause();">▮▮</a>
+      </div>
+    </aside>    
+  </body>
+</html>
