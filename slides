@@ -291,32 +291,11 @@ images/dccar.jpg
 images/cover.jpg
 
 !FREEFORM
-<h1>THANKS!</1>
-<table><tbody>
-  <tr>
-    <td style="text-align: right" colspan='2'><h3>Slides</h3></td>
-    <td style="white-space: nowrap"><h3>@</h3></td>
-    <td style="white-space: nowrap; text-align: left"><h3><a href="http://bit.ly/weird-ruby">bit.ly/weird-ruby</a></h3></td>
-  </tr>
-  <tr>
-    <td style="text-align: right; white-space: nowrap; vertical-align: top" colspan='2'><h3>Jobs</h3></td>
-    <td style="white-space: nowrap; vertical-align: top"><h3>@</h3></td>
-    <td style="text-align:left; vertical-align: top"><h3> <a href="http://tech.stitchfix.com">tech.stitchfix.com</a></h3></td>
-  </tr>
-  <tr>
-    <td>&nbsp;</td>
-  </tr>
-  <tr>
-    <td style="text-align: right; white-space: nowrap; vertical-align: top"><img class="shadow" src="images/cover.jpg" width='100'></td>
-    <td style="text-align: right; white-space: nowrap; vertical-align: top"><h3>Buy <em>The Senior Software Engineer</em>&nbsp;</h3></td>
-    <td style="white-space: nowrap; vertical-align: top"><h3>@</h3></td>
-    <td style="text-align:left; vertical-align: top"><h3><a href="http://sweng.me">sweng.me</a></h3></td>
-  </tr>
-  <tr>
-    <td style="text-align: right; white-space: nowrap; vertical-align: top"><img class="shadow" src="images/dccar.jpg" width='100'></td>
-    <td style="text-align: right; white-space: nowrap; vertical-align: top"><h3>Buy <em>Build Awesome Command-Line<br>Apps in Ruby</em>&nbsp;</h3></td>
-    <td style="white-space: nowrap; vertical-align: top"><h3>@</h3></td>
-    <td style="text-align:left; vertical-align: top"><h3><a href="http://pragprog.com/book/dccar2">pragprog.com/book/dccar2</a></h3></td>
-  </tr>
-</tbody></table>
+<h1>THANKS!</h1>
+<table>
+<tr><td>Slides: <a href="http://bit.ly/resque-prod">http://bit.ly/resque-prod</a></td></tr>
+<tr><td>Work For Stitch Fix: <a href="http://tech.stitchfix.com/blog">tech.stitchfix.com/blog</a></td></tr>
+<tr><td>Buy The Senior Software Engineer: <a href="http://sweng.me">sweng.me</a></td></tr>
+<tr><td>Buy Build Awesome Command-Line Apps in Ruby: <a href="http://pragprog.com/book/dccar2">pragprog.com/book/dccar2</a></td></tr>
+</table>
 
