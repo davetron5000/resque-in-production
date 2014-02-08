@@ -4,15 +4,18 @@ Resque in Production
 Background Everything
 @davetron5000
 
+!QUOTE
+Resque is a Redis-backed Ruby library for creating background jobs, placing them on multiple queues, and processing them later.
+
+!IMAGE: background=FFF
+images/resque.png
+
 !NORMAL
 STITCH FIX
 Lead Engineer
 
 !IMAGE: background=252525
 images/LSLogo.jpg
-
-!QUOTE
-Resque is a Redis-backed Ruby library for creating background jobs, placing them on multiple queues, and processing them later.
 
 !CODE
 file://src/users_controller_orig.rb
@@ -274,7 +277,7 @@ end
 -> simple, assuming you can spare the CPU and memory
 
 !BULLETS
-You Might Are Gonna Need It
+Resque Tips
 * All external contact would be run in a job
 * All email sent in a job
 * All jobs configured to retry
