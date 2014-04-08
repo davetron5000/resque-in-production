@@ -10,12 +10,12 @@ Resque is a Redis-backed Ruby library for creating background jobs, placing them
 !IMAGE: background=FFF
 images/resque.png
 
+!IMAGE: background=252525
+images/LSLogo.jpg
+
 !NORMAL
 STITCH FIX
 Lead Engineer
-
-!IMAGE: background=252525
-images/LSLogo.jpg
 
 !CODE
 file://src/users_controller_orig.rb
@@ -166,26 +166,16 @@ Purchase emails still failing
 
 !CODE: language=ruby
 
-  mount Resque::Server, at: 'resque'
-
-
-!CODE: language=ruby
-constraints CanAccessResque do
-  mount Resque::Server, at: 'resque'
-end
-
-!CODE: language=ruby
-class CanAccessResque
-  def self.matches?(request)
-    # whatever
-  end
-end
+mount Resque::Server, at: 'resque'
 
 !IMAGE: background=EFEFEF
 images/resque-web-1.png
 
 !IMAGE: background=EFEFEF
 images/resque-web-failed-queue.png
+
+!CODE
+file://src/purchases_controller_orig.rb
 
 !COMMANDLINE
 > echo "gem 'resque-retry'" >> Gemfile

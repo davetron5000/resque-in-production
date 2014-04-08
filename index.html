@@ -42,12 +42,12 @@
 <section class='IMAGE' data-background='FFF'>
 <img src='images/resque.png'>
 </section>
+<section class='IMAGE' data-background='252525'>
+<img src='images/LSLogo.jpg'>
+</section>
 <section class='NORMAL'>
 <h1>STITCH FIX</h1>
 <h2>Lead Engineer</h2>
-</section>
-<section class='IMAGE' data-background='252525'>
-<img src='images/LSLogo.jpg'>
 </section>
 <section class='CODE'>
 <pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class UsersController</span>
@@ -319,26 +319,31 @@
 </section>
 <section class='CODE'>
 <pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' ></span>
-<span class='line line-2 ' >  mount Resque::Server, at: 'resque'</span>
-<span class='line line-3 ' ></span></code></pre>
-</section>
-<section class='CODE'>
-<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >constraints CanAccessResque do</span>
-<span class='line line-2 ' >  mount Resque::Server, at: 'resque'</span>
-<span class='line line-3 ' >end</span></code></pre>
-</section>
-<section class='CODE'>
-<pre><code class='ruby' data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class CanAccessResque</span>
-<span class='line line-2 ' >  def self.matches?(request)</span>
-<span class='line line-3 ' >    # whatever</span>
-<span class='line line-4 ' >  end</span>
-<span class='line line-5 ' >end</span></code></pre>
+<span class='line line-2 ' >mount Resque::Server, at: 'resque'</span></code></pre>
 </section>
 <section class='IMAGE' data-background='EFEFEF'>
 <img src='images/resque-web-1.png'>
 </section>
 <section class='IMAGE' data-background='EFEFEF'>
 <img src='images/resque-web-failed-queue.png'>
+</section>
+<section class='CODE'>
+<pre><code class='ruby'data-strikeouts='' data-callout-lines=''><span class='line line-1 ' >class PurchasesController</span>
+<span class='line line-2 ' >  def create</span>
+<span class='line line-3 ' >    customer = current_customer</span>
+<span class='line line-4 ' >    purchase = Purchase.new(params[:purchase].merge(customer: customer))</span>
+<span class='line line-5 ' >    if purchase.valid?</span>
+<span class='line line-6 ' >      Purchase.transaction do</span>
+<span class='line line-7 ' >        customer.last_order_date = Time.now</span>
+<span class='line line-8 ' >        purchase.save!</span>
+<span class='line line-9 ' >        customer.save!</span>
+<span class='line line-10 ' >        PurchaseMailer.confirm_purchase(purchase).deliver</span>
+<span class='line line-11 ' >      end</span>
+<span class='line line-12 ' >    else</span>
+<span class='line line-13 ' >      render 'new'</span>
+<span class='line line-14 ' >    end</span>
+<span class='line line-15 ' >  end</span>
+<span class='line line-16 ' >end</span></code></pre>
 </section>
 <section class='COMMANDLINE'>
 <pre><code class='no-highlight'><span class='cli-prompt'>&gt;</span> <span class='cli-element cli-command cli-line'> echo "gem 'resque-retry'" >> Gemfile</span>
@@ -555,7 +560,7 @@
 </code></pre>
 </section>
 <section class='BULLETS'>
-<h1>You Might Are Gonna Need It</h1>
+<h1>Resque Tips</h1>
 <ul>
 <li>All external contact would be run in a job</li>
 <li>All email sent in a job</li>
