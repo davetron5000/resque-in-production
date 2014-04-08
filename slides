@@ -268,6 +268,7 @@ end
 
 !BULLETS
 Resque Tips
+* Do not use 2.0 - use 1.x
 * All external contact would be run in a job
 * All email sent in a job
 * All jobs configured to retry
