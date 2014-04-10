@@ -236,9 +236,6 @@ file://src/pack_in_materials_job_orig.rb
 !CODE: callout=2,4,5
 file://src/pack_in_materials_job_retry.rb
 
-!CODE: callout=6
-file://src/charge_purchase_job_idempotent.rb
-
 !SECTION
 Jobs not being processed, but not failing
 

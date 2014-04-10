@@ -520,16 +520,6 @@
 <span class='line line-10 ' >  end</span>
 <span class='line line-11 ' >end</span></code></pre>
 </section>
-<section class='CODE'>
-<pre><code class='ruby'data-strikeouts='' data-callout-lines='6'><span class='line line-1 ' >class PurchaseChargeJob</span>
-<span class='line line-2 ' >  @queue = :purchasing</span>
-<span class='line line-3 ' >  def self.perform(purchase_id)</span>
-<span class='line line-4 ' >    purchase = Purchase.find(purchase_id)</span>
-<span class='line line-5 ' >    purchase.capture_authorization! unless purchase.captured?</span>
-<div class='lines-callout'><span class='line line-6 line-callout' >    Resque.enqueue(PackInMaterialsJob,purchase.id)</span>
-</div><span class='line line-7 ' >  end</span>
-<span class='line line-8 ' >end</span></code></pre>
-</section>
 <section class='SECTION'>
 <h1>Jobs not being processed, but not failing</h1>
 </section>
